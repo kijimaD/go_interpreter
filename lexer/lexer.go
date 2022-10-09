@@ -52,10 +52,15 @@ func (l *Lexer) NextToken() token.Token {
 		tok.Literal = ""
 		tok.Type = token.EOF
 	default:
-		// 2文字以上のトークンが予約語か、ユーザ定義の識別子か判定する
 		if isLetter(l.ch) {
+			// 2文字以上のトークンが予約語か、ユーザ定義の識別子か判定する
 			tok.Literal = l.readIdentifier()
-			tok.Type = token.LookupIdent(tok.Literal)
+			tok.Type = token.LookupIdent(tok.Literal) // 予約語
+			return tok
+		} else if isDigit(l.ch) {
+			// 整数を読み込み
+			tok.Literal = l.readNumber()
+			tok.Type = token.INT
 			return tok
 		} else {
 			tok = newToken(token.ILLEGAL, l.ch)
@@ -70,6 +75,7 @@ func newToken(tokenType token.TokenType, ch byte) token.Token {
 	return token.Token{Type: tokenType, Literal: string(ch)}
 }
 
+// 予約語を読み込み
 func (l *Lexer) readIdentifier() string {
 	position := l.position
 	for isLetter(l.ch) {
@@ -88,4 +94,17 @@ func (l *Lexer) skipWhitespace() {
 	for l.ch == ' ' || l.ch == '\t' || l.ch == '\n' || l.ch == '\r' {
 		l.readChar()
 	}
+}
+
+// 整数を読み込む
+func (l *Lexer) readNumber() string {
+	position := l.position
+	for isDigit(l.ch) {
+		l.readChar()
+	}
+	return l.input[position:l.position]
+}
+
+func isDigit(ch byte) bool {
+	return '0' <= ch && ch <= '9'
 }

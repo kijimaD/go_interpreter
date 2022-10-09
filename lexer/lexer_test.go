@@ -54,7 +54,7 @@ let result = add(five, ten);
 		{token.IDENT, "add"},
 		{token.LPAREN, "("},
 		{token.IDENT, "five"},
-		{token.COMMA, "five"},
+		{token.COMMA, ","},
 		{token.IDENT, "ten"},
 		{token.RPAREN, ")"},
 		{token.SEMICOLON, ";"},
