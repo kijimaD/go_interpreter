@@ -3,10 +3,10 @@ package lexer
 import "monkey/token"
 
 type Lexer struct {
-	input string
-	position int		// 現在検査中のバイトchの位置
-	readPosition int 	// 入力における次の位置
-	ch byte
+	input        string
+	position     int // 現在検査中のバイトchの位置
+	readPosition int // 入力における次の位置
+	ch           byte
 }
 
 func New(input string) *Lexer {
@@ -18,7 +18,7 @@ func New(input string) *Lexer {
 // 次の1文字を読んでinput文字列の現在位置を進める
 func (l *Lexer) readChar() {
 	if l.readPosition >= len(l.input) {
-		l.ch = 0 	// ASCIIコードの"NUL"文字に対応している
+		l.ch = 0 // ASCIIコードの"NUL"文字に対応している
 	} else {
 		l.ch = l.input[l.readPosition]
 	}
@@ -26,7 +26,7 @@ func (l *Lexer) readChar() {
 	l.readPosition += 1
 }
 
-func (l *Lexer) NextToken() token.Token{
+func (l *Lexer) NextToken() token.Token {
 	var tok token.Token
 
 	switch l.ch {
