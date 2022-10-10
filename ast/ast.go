@@ -27,8 +27,8 @@ type Program struct {
 }
 
 func (p *Program) TokenLiteral() string {
-	if len(p.Statement) > 0 {
-		return p.statements[0].TokenLiteral()
+	if len(p.Statements) > 0 {
+		return p.Statements[0].TokenLiteral()
 	} else {
 		return ""
 	}
@@ -44,7 +44,7 @@ func (ls *LetStatement) statementNode()       {}
 func (ls *LetStatement) TokenLiteral() string { return ls.Token.Literal }
 
 // 束縛の識別子
-type Identifer struct {
+type Identifier struct {
 	Token token.Token // token.IDENT トークン
 	Value string
 }
