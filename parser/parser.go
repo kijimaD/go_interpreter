@@ -3,6 +3,7 @@
 package parser
 
 import (
+	"fmt"
 	"monkey/ast"
 	"monkey/lexer"
 	"monkey/token"
@@ -13,16 +14,34 @@ type Parser struct {
 
 	curToken  token.Token // 現在のトークン
 	peekToken token.Token // 次のトークン
+	errors    []string
 }
 
 // 字句解析器を受け取って初期化する
 func New(l *lexer.Lexer) *Parser {
-	p := &Parser{l: l}
+	p := &Parser{
+		l:      l,
+		errors: []string{},
+	}
 	// 2つトークンを読み込む。curTokenとpeekTokenの両方がセットされる
 	p.nextToken()
 	p.nextToken()
 
 	return p
+}
+
+// エラーのアクセサ
+func (p *Parser) Errors() []string {
+	return p.errors
+}
+
+// エラーを追加する
+func (p *Parser) peekError(t token.TokenType) {
+	msg := fmt.Sprintf("expected next token to be %s, got %s instead",
+		t,
+		p.peekToken.Type,
+	)
+	p.errors = append(p.errors, msg)
 }
 
 // 次のトークンに進む
@@ -58,8 +77,9 @@ func (p *Parser) parseStatement() ast.Statement {
 }
 
 // let文をパースする
+// IDENT -> ASSIGN -> SEMICOLON のトークン列を満たさない場合をアサーションexpectPeek()によって確認する
 func (p *Parser) parseLetStatement() *ast.LetStatement {
-	// 現在見ているトークン基づいてLetStatementノードを構築する
+	// 現在見ているトークンに基づいてLetStatementノードを構築する
 	// stmt => statement
 	stmt := &ast.LetStatement{Token: p.curToken}
 
@@ -98,6 +118,7 @@ func (p *Parser) expectPeek(t token.TokenType) bool {
 		p.nextToken()
 		return true
 	} else {
+		p.peekError(t)
 		return false
 	}
 }
