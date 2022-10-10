@@ -11,10 +11,11 @@ import (
 type Parser struct {
 	l *lexer.Lexer
 
-	curToken  token.Token
-	peekToken token.Token
+	curToken  token.Token // 現在のトークン
+	peekToken token.Token // 次のトークン
 }
 
+// 字句解析器を受け取って初期化する
 func New(l *lexer.Lexer) *Parser {
 	p := &Parser{l: l}
 	// 2つトークンを読み込む。curTokenとpeekTokenの両方がセットされる
@@ -24,11 +25,13 @@ func New(l *lexer.Lexer) *Parser {
 	return p
 }
 
+// 次のトークンに進む
 func (p *Parser) nextToken() {
 	p.curToken = p.peekToken
 	p.peekToken = p.l.NextToken()
 }
 
+// パースを開始。トークンを1つずつ辿る
 func (p *Parser) ParseProgram() *ast.Program {
 	program := &ast.Program{}
 	program.Statements = []ast.Statement{}
@@ -44,6 +47,7 @@ func (p *Parser) ParseProgram() *ast.Program {
 	return program
 }
 
+// 文をパースする。トークンの型によって適用関数を変える。
 func (p *Parser) parseStatement() ast.Statement {
 	switch p.curToken.Type {
 	case token.LET:
@@ -53,9 +57,13 @@ func (p *Parser) parseStatement() ast.Statement {
 	}
 }
 
+// let文をパースする
 func (p *Parser) parseLetStatement() *ast.LetStatement {
+	// 現在見ているトークン基づいてLetStatementノードを構築する
+	// stmt => statement
 	stmt := &ast.LetStatement{Token: p.curToken}
 
+	// 後続するトークンにアサーションを設けつつトークンを進める
 	if !p.expectPeek(token.IDENT) {
 		return nil
 	}
@@ -74,14 +82,17 @@ func (p *Parser) parseLetStatement() *ast.LetStatement {
 	return stmt
 }
 
+// 現在のトークンと引数の型を比較する
 func (p *Parser) curTokenIs(t token.TokenType) bool {
 	return p.curToken.Type == t
 }
 
+// 次のトークンと引数の型を比較する
 func (p *Parser) peekTokenIs(t token.TokenType) bool {
 	return p.peekToken.Type == t
 }
 
+// peekTokenの型をチェックし、その型が正しい場合に限ってnextTokenを読んで、トークンを進める
 func (p *Parser) expectPeek(t token.TokenType) bool {
 	if p.peekTokenIs(t) {
 		p.nextToken()

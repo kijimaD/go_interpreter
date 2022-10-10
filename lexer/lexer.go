@@ -11,6 +11,7 @@ type Lexer struct {
 	ch           byte
 }
 
+// ソースコード文字列を引数に取り、初期化する
 func New(input string) *Lexer {
 	l := &Lexer{input: input}
 	l.readChar()
@@ -28,6 +29,7 @@ func (l *Lexer) readChar() {
 	l.readPosition += 1
 }
 
+// 現在の1文字を読みこんでトークンを返す
 func (l *Lexer) NextToken() token.Token {
 	var tok token.Token
 
@@ -100,6 +102,7 @@ func (l *Lexer) NextToken() token.Token {
 	return tok
 }
 
+// トークンを初期化する
 func newToken(tokenType token.TokenType, ch byte) token.Token {
 	return token.Token{Type: tokenType, Literal: string(ch)}
 }
@@ -138,11 +141,12 @@ func (l *Lexer) peekChar() byte {
 	}
 }
 
+// 数字か判定する
 func isDigit(ch byte) bool {
 	return '0' <= ch && ch <= '9'
 }
 
-// 英字かどうかを判定する
+// 英字か判定する
 func isLetter(ch byte) bool {
 	return 'a' <= ch && ch <= 'z' || 'A' <= ch && ch <= 'Z' || ch == '_'
 }
