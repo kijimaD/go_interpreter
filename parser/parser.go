@@ -66,7 +66,8 @@ func (p *Parser) ParseProgram() *ast.Program {
 	return program
 }
 
-// 文をパースする。トークンの型によって適用関数を変える。
+// 文をパースする。トークンの型によって適用関数を変える
+// Monkey言語では、文で構成されるのはこれだけ
 func (p *Parser) parseStatement() ast.Statement {
 	switch p.curToken.Type {
 	case token.LET:
@@ -80,6 +81,7 @@ func (p *Parser) parseStatement() ast.Statement {
 
 // let文をパースする
 // IDENT -> ASSIGN -> SEMICOLON のトークン列を満たさない場合をアサーションexpectPeek()によって確認する
+// 左から右に、次のトークンが期待通りであるか、そうでないかを判断しつつ、全てがぴったりはまったらASTノードを返す
 func (p *Parser) parseLetStatement() *ast.LetStatement {
 	// 現在見ているトークンに基づいてLetStatementノードを構築する
 	// stmt => statement
