@@ -10,12 +10,28 @@ import (
 )
 
 type Parser struct {
-	l *lexer.Lexer
+	l      *lexer.Lexer
+	errors []string
 
 	curToken  token.Token // 現在のトークン
 	peekToken token.Token // 次のトークン
-	errors    []string
+
+	// 構文解析関数がどちらの中置もしくは前置のマップにあるかをチェックする
+	prefixParseFns map[token.TokenType]prefixParseFn
+	infixParseFns  map[token.TokenType]infixParseFn
 }
+
+type (
+	// どちらの関数もast.Expressionを返す。これが欲しいもの
+
+	// 前置構文解析関数 ++1
+	// 前置演算子には「左側」が存在しない
+	prefixParseFn func() ast.Expression
+
+	// 中置構文解析関数 n + 1
+	// 引数は中置演算子の「左側」
+	infixParseFn func(ast.Expression) ast.Expression
+)
 
 // 字句解析器を受け取って初期化する
 func New(l *lexer.Lexer) *Parser {
@@ -139,4 +155,12 @@ func (p *Parser) expectPeek(t token.TokenType) bool {
 		p.peekError(t)
 		return false
 	}
+}
+
+func (p *Parser) registerPrefix(tokenType token.TokenType, fn prefixParseFn) {
+	p.prefixParseFns[tokenType] = fn
+}
+
+func (p *Parser) registerInfix(tokenType token.TokenType, fn infixParseFn) {
+	p.infixParseFns[tokenType] = fn
 }
