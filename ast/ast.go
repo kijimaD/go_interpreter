@@ -116,3 +116,14 @@ func (es *ExpressionStatement) String() string {
 	}
 	return ""
 }
+
+// 整数リテラル
+// ast.Expressionインターフェースを満たす
+type IntegerLiteral struct {
+	Token token.Token
+	Value int64 // 整数リテラルが表現している実際の値を格納する
+}
+
+func (il *IntegerLiteral) expressionNode()      {}
+func (il *IntegerLiteral) TokenLiteral() string { return il.Token.Literal }
+func (il *IntegerLiteral) String() string       { return il.Token.Literal }

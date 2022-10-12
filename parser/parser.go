@@ -7,6 +7,7 @@ import (
 	"monkey/ast"
 	"monkey/lexer"
 	"monkey/token"
+	"strconv"
 )
 
 type Parser struct {
@@ -54,6 +55,7 @@ func New(l *lexer.Lexer) *Parser {
 
 	p.prefixParseFns = make(map[token.TokenType]prefixParseFn)
 	p.registerPrefix(token.IDENT, p.parseIdentifier) // もしトークンタイプtoken.IDENTが出現したら、呼び出すべき構文解析関数はparseIdentifier
+	p.registerPrefix(token.INT, p.parseIntegerLiteral)
 
 	// 2つトークンを読み込む。curTokenとpeekTokenの両方がセットされる
 	p.nextToken()
@@ -209,9 +211,26 @@ func (p *Parser) parseExpression(precedence int) ast.Expression {
 	return leftExp
 }
 
-// *ast.Identifierを返す
+// 識別子用関数。*ast.Identifierを返す
 func (p *Parser) parseIdentifier() ast.Expression {
 	// 現在のトークンをTokenフィールドに、トークンのリテラル値をValueフィールドに格納する
 	// トークンは進めない
 	return &ast.Identifier{Token: p.curToken, Value: p.curToken.Literal}
+}
+
+// 整数用関数
+// p.curToken.Literalの文字列をint64に変換する
+func (p *Parser) parseIntegerLiteral() ast.Expression {
+	lit := &ast.IntegerLiteral{Token: p.curToken}
+
+	value, err := strconv.ParseInt(p.curToken.Literal, 0, 64)
+	if err != nil {
+		msg := fmt.Sprintf("could not parse %q as integer", p.curToken.Literal)
+		p.errors = append(p.errors, msg)
+		return nil
+	}
+
+	lit.Value = value
+
+	return lit
 }
