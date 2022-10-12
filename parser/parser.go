@@ -212,6 +212,7 @@ func (p *Parser) registerInfix(tokenType token.TokenType, fn infixParseFn) {
 
 // 式文を構文解析する
 func (p *Parser) parseExpressionStatement() *ast.ExpressionStatement {
+	defer untrace(trace("parseExpressionStatement"))
 	stmt := &ast.ExpressionStatement{Token: p.curToken}
 
 	stmt.Expression = p.parseExpression(LOWEST)
@@ -246,6 +247,7 @@ func (p *Parser) parseExpressionStatement() *ast.ExpressionStatement {
 // / ┃━┃ ┃
 // / - 1+2
 func (p *Parser) parseExpression(precedence int) ast.Expression {
+	defer untrace(trace("parseExpression"))
 	prefix := p.prefixParseFns[p.curToken.Type]
 	if prefix == nil {
 		p.noPrefixParseFnError(p.curToken.Type)
@@ -280,6 +282,7 @@ func (p *Parser) parseIdentifier() ast.Expression {
 // 整数パース
 // p.curToken.Literalの文字列をint64に変換する
 func (p *Parser) parseIntegerLiteral() ast.Expression {
+	defer untrace(trace("parseIntegerLiteral"))
 	lit := &ast.IntegerLiteral{Token: p.curToken}
 
 	value, err := strconv.ParseInt(p.curToken.Literal, 0, 64)
@@ -296,6 +299,7 @@ func (p *Parser) parseIntegerLiteral() ast.Expression {
 
 // 前置式パース。ほかのパース関数と異なり、トークンが進むのに注意
 func (p *Parser) parsePrefixExpression() ast.Expression {
+	defer untrace(trace("parsePrefixExpression"))
 	expression := &ast.PrefixExpression{
 		Token:    p.curToken,
 		Operator: p.curToken.Literal,
@@ -316,6 +320,7 @@ func (p *Parser) parsePrefixExpression() ast.Expression {
 // 中置演算式パース
 // 引数としてleftという名前のast.Expressionを取ることに注意
 func (p *Parser) parseInfixExpression(left ast.Expression) ast.Expression {
+	defer untrace(trace("parseInfixExpression"))
 	expression := &ast.InfixExpression{
 		Token:    p.curToken, // 現在のトークンは中置演算子式の演算子である
 		Operator: p.curToken.Literal,
