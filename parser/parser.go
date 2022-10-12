@@ -225,6 +225,26 @@ func (p *Parser) parseExpressionStatement() *ast.ExpressionStatement {
 }
 
 // p.curToken.Typeの前置に関連付けられた構文解析関数があるかを確認し、存在していればその構文解析関数を呼び出し、その結果を返す
+// やりたいこと: 高い優先順位を持つ演算子に関する式を、より低い優先順位を持つ演算子に関する式と比べて、より木の深いレベルに配置すること。引数precedenceはそのために使われる
+// 1の優先度が高いとき
+// / (1+2)+3
+// /     ┃
+// /   ┃━┃
+// / ┃━┃ ┃
+// / 1+2+3
+
+// 3の優先度が高いとき
+// / 1+(2+3)
+// / ┃
+// / ┃━┃
+// / ┃ ┃━┃
+// / 1+2+3
+// / 前置演算子の場合。定義からPREFIXは高い優先順位を持つ。このため、parseExpression(PREFIX)は-1の中の1を構文解析しようとしてinfixParseFnに渡すことは決してない。どのinfixParseFnも1を左腕に取ることはなく、1は前置式の右腕として返される。
+// / -1+2
+// /     ┃
+// /   ┃━┃
+// / ┃━┃ ┃
+// / - 1+2
 func (p *Parser) parseExpression(precedence int) ast.Expression {
 	prefix := p.prefixParseFns[p.curToken.Type]
 	if prefix == nil {
@@ -233,7 +253,9 @@ func (p *Parser) parseExpression(precedence int) ast.Expression {
 	}
 	leftExp := prefix()
 
+	// 優先順位の処理を行っている重要な部分
 	// より低い優先順位のトークンに遭遇するまで繰り返す
+	// 優先順位が同じもしくは高いトークンに遭遇すると実行しない
 	for !p.peekTokenIs(token.SEMICOLON) && precedence < p.peekPrecedence() {
 		infix := p.infixParseFns[p.peekToken.Type]
 		if infix == nil {
