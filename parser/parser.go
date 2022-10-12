@@ -56,6 +56,8 @@ func New(l *lexer.Lexer) *Parser {
 	p.prefixParseFns = make(map[token.TokenType]prefixParseFn)
 	p.registerPrefix(token.IDENT, p.parseIdentifier) // もしトークンタイプtoken.IDENTが出現したら、呼び出すべき構文解析関数はparseIdentifier
 	p.registerPrefix(token.INT, p.parseIntegerLiteral)
+	p.registerPrefix(token.BANG, p.parsePrefixExpression)
+	p.registerPrefix(token.MINUS, p.parsePrefixExpression)
 
 	// 2つトークンを読み込む。curTokenとpeekTokenの両方がセットされる
 	p.nextToken()
@@ -204,6 +206,7 @@ func (p *Parser) parseExpressionStatement() *ast.ExpressionStatement {
 func (p *Parser) parseExpression(precedence int) ast.Expression {
 	prefix := p.prefixParseFns[p.curToken.Type]
 	if prefix == nil {
+		p.noPrefixParseFnError(p.curToken.Type)
 		return nil
 	}
 	leftExp := prefix()
@@ -211,14 +214,14 @@ func (p *Parser) parseExpression(precedence int) ast.Expression {
 	return leftExp
 }
 
-// 識別子用関数。*ast.Identifierを返す
+// 識別子パース。*ast.Identifierを返す
 func (p *Parser) parseIdentifier() ast.Expression {
 	// 現在のトークンをTokenフィールドに、トークンのリテラル値をValueフィールドに格納する
 	// トークンは進めない
 	return &ast.Identifier{Token: p.curToken, Value: p.curToken.Literal}
 }
 
-// 整数用関数
+// 整数パース
 // p.curToken.Literalの文字列をint64に変換する
 func (p *Parser) parseIntegerLiteral() ast.Expression {
 	lit := &ast.IntegerLiteral{Token: p.curToken}
@@ -233,4 +236,29 @@ func (p *Parser) parseIntegerLiteral() ast.Expression {
 	lit.Value = value
 
 	return lit
+}
+
+// 前置式パース。ほかのパース関数と異なり、トークンが進むのに注意
+func (p *Parser) parsePrefixExpression() ast.Expression {
+	expression := &ast.PrefixExpression{
+		Token:    p.curToken,
+		Operator: p.curToken.Literal,
+	}
+
+	// トークンを進める
+	// parsePrefixExpressionが呼ばれるとき、p.curTokenはタイプtoken.BANGかタイプtoken.MINUSのいずれか。そうでなければこの関数が呼ばれることはないから。しかし、-5のような前置演算子式を正しく構文解析するには、複数のトークンが「消費」される必要がある。
+	// そこで、*ast.PrefixExpressionノードを構築するためにp.curTokenを使用したあと、このメソッドはトークンを進め、parseExpressionをまた呼ぶ。このとき、前置演算子の優先順位を引数に渡す。
+	p.nextToken()
+
+	// この時点のトークンの位置は、1つ進んでいる。
+	// -5の場合、 p.curToken.Type は token.INT 。この値をRightフィールドに設定して、返却
+	expression.Right = p.parseExpression(PREFIX)
+
+	return expression
+}
+
+// デバッグしやすいようにエラーメッセージを追加する
+func (p *Parser) noPrefixParseFnError(t token.TokenType) {
+	msg := fmt.Sprintf("no prefix parse function for %s found", t)
+	p.errors = append(p.errors, msg)
 }
