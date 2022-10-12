@@ -33,12 +33,28 @@ type (
 	infixParseFn func(ast.Expression) ast.Expression
 )
 
+// iotaで割り当てられる整数の値は重要ではない。演算子の優先順位を表現するものとして重要。
+const (
+	_ int = iota
+	LOWEST
+	EQUALS      // ==
+	LESSGREATER // > または <
+	SUM         // +
+	PRODUCT     // *
+	PREFIX      // -X または !X
+	CALL        // myFunction(X)
+)
+
 // 字句解析器を受け取って初期化する
 func New(l *lexer.Lexer) *Parser {
 	p := &Parser{
 		l:      l,
 		errors: []string{},
 	}
+
+	p.prefixParseFns = make(map[token.TokenType]prefixParseFn)
+	p.registerPrefix(token.IDENT, p.parseIdentifier) // もしトークンタイプtoken.IDENTが出現したら、呼び出すべき構文解析関数はparseIdentifier
+
 	// 2つトークンを読み込む。curTokenとpeekTokenの両方がセットされる
 	p.nextToken()
 	p.nextToken()
@@ -91,7 +107,8 @@ func (p *Parser) parseStatement() ast.Statement {
 	case token.RETURN:
 		return p.parseReturnStatement()
 	default:
-		return nil
+		// 式文の構文解析を試みる
+		return p.parseExpressionStatement()
 	}
 }
 
@@ -157,10 +174,44 @@ func (p *Parser) expectPeek(t token.TokenType) bool {
 	}
 }
 
+// 構文解析関数を登録する
 func (p *Parser) registerPrefix(tokenType token.TokenType, fn prefixParseFn) {
 	p.prefixParseFns[tokenType] = fn
 }
 
+// 構文解析関数を登録する
 func (p *Parser) registerInfix(tokenType token.TokenType, fn infixParseFn) {
 	p.infixParseFns[tokenType] = fn
+}
+
+// 式文を構文解析する
+func (p *Parser) parseExpressionStatement() *ast.ExpressionStatement {
+	stmt := &ast.ExpressionStatement{Token: p.curToken}
+
+	stmt.Expression = p.parseExpression(LOWEST)
+
+	// セミコロンは省略可能。あとでREPLに入力しやすくなる
+	if p.peekTokenIs(token.SEMICOLON) {
+		p.nextToken()
+	}
+
+	return stmt
+}
+
+// p.curToken.Typeの前置に関連付けられた構文解析関数があるかを確認し、存在していればその構文解析関数を呼び出し、その結果を返す
+func (p *Parser) parseExpression(precedence int) ast.Expression {
+	prefix := p.prefixParseFns[p.curToken.Type]
+	if prefix == nil {
+		return nil
+	}
+	leftExp := prefix()
+
+	return leftExp
+}
+
+// *ast.Identifierを返す
+func (p *Parser) parseIdentifier() ast.Expression {
+	// 現在のトークンをTokenフィールドに、トークンのリテラル値をValueフィールドに格納する
+	// トークンは進めない
+	return &ast.Identifier{Token: p.curToken, Value: p.curToken.Literal}
 }
