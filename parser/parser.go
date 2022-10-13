@@ -70,6 +70,8 @@ func New(l *lexer.Lexer) *Parser {
 	p.registerPrefix(token.INT, p.parseIntegerLiteral)
 	p.registerPrefix(token.BANG, p.parsePrefixExpression)
 	p.registerPrefix(token.MINUS, p.parsePrefixExpression)
+	p.registerPrefix(token.TRUE, p.parseBoolean)
+	p.registerPrefix(token.FALSE, p.parseBoolean)
 
 	p.infixParseFns = make(map[token.TokenType]infixParseFn)
 	p.registerInfix(token.PLUS, p.parseInfixExpression)
@@ -179,6 +181,11 @@ func (p *Parser) parseReturnStatement() *ast.ReturnStatement {
 	return stmt
 }
 
+// booleanをパースする
+func (p *Parser) parseBoolean() ast.Expression {
+	return &ast.Boolean{Token: p.curToken, Value: p.curTokenIs(token.TRUE)}
+}
+
 // 現在のトークンと引数の型を比較する
 func (p *Parser) curTokenIs(t token.TokenType) bool {
 	return p.curToken.Type == t
@@ -233,13 +240,14 @@ func (p *Parser) parseExpressionStatement() *ast.ExpressionStatement {
 // /   ┃━┃
 // / ┃━┃ ┃
 // / 1+2+3
-
+//
 // 3の優先度が高いとき
 // / 1+(2+3)
 // / ┃
 // / ┃━┃
 // / ┃ ┃━┃
 // / 1+2+3
+//
 // / 前置演算子の場合。定義からPREFIXは高い優先順位を持つ。このため、parseExpression(PREFIX)は-1の中の1を構文解析しようとしてinfixParseFnに渡すことは決してない。どのinfixParseFnも1を左腕に取ることはなく、1は前置式の右腕として返される。
 // / -1+2
 // /     ┃
