@@ -74,6 +74,7 @@ func New(l *lexer.Lexer) *Parser {
 	p.registerPrefix(token.TRUE, p.parseBoolean)
 	p.registerPrefix(token.FALSE, p.parseBoolean)
 	p.registerPrefix(token.LPAREN, p.parseGroupedExpression)
+	p.registerPrefix(token.IF, p.parseIfExpression)
 
 	// 中置演算子
 	p.infixParseFns = make(map[token.TokenType]infixParseFn)
@@ -113,7 +114,7 @@ func (p *Parser) nextToken() {
 	p.peekToken = p.l.NextToken()
 }
 
-// パースを開始。トークンを1つずつ辿る
+// パースを開始する。トークンを1つずつ辿る
 func (p *Parser) ParseProgram() *ast.Program {
 	program := &ast.Program{}
 	program.Statements = []ast.Statement{}
@@ -267,7 +268,7 @@ func (p *Parser) parseExpression(precedence int) ast.Expression {
 	leftExp := prefix()
 
 	// 優先順位の処理を行っている重要な部分
-	// より低い優先順位のトークンに遭遇するまで繰り返す
+	// より低い優先順位のトークンに遭遇する間繰り返す
 	// 優先順位が同じもしくは高いトークンに遭遇すると実行しない
 	for !p.peekTokenIs(token.SEMICOLON) && precedence < p.peekPrecedence() {
 		infix := p.infixParseFns[p.peekToken.Type]
@@ -358,6 +359,59 @@ func (p *Parser) parseGroupedExpression() ast.Expression {
 	}
 
 	return exp
+}
+
+// ifをパース
+func (p *Parser) parseIfExpression() ast.Expression {
+	expression := &ast.IfExpression{Token: p.curToken}
+
+	if !p.expectPeek(token.LPAREN) {
+		return nil
+	}
+
+	p.nextToken()
+	expression.Condition = p.parseExpression(LOWEST)
+
+	if !p.expectPeek(token.RPAREN) {
+		return nil
+	}
+
+	if !p.expectPeek(token.LBRACE) {
+		return nil
+	}
+
+	expression.Consequence = p.parseBlockStatement()
+
+	// elseの存在チェックし、存在する場合はelseの直後に来るブロック文を構文解析する
+	// elseの省略は許す
+	if p.peekTokenIs(token.ELSE) {
+		p.nextToken()
+
+		if !p.expectPeek(token.LBRACE) {
+			return nil
+		}
+
+		expression.Alternative = p.parseBlockStatement()
+	}
+
+	return expression
+}
+
+func (p *Parser) parseBlockStatement() *ast.BlockStatement {
+	block := &ast.BlockStatement{Token: p.curToken}
+	block.Statements = []ast.Statement{}
+
+	p.nextToken()
+
+	for !p.curTokenIs(token.RBRACE) && !p.curTokenIs(token.EOF) {
+		stmt := p.parseStatement()
+		if stmt != nil {
+			block.Statements = append(block.Statements, stmt)
+		}
+		p.nextToken()
+	}
+
+	return block
 }
 
 // デバッグしやすいようにエラーメッセージを追加する
