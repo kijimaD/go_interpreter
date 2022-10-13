@@ -1,10 +1,12 @@
-// 値を返すもものが式、返さないのが文
+// 値を返すもものが式(expression)、返さないのが文(statement)
+// 式はそれ単独では完結せず、文または四季の一部で完結する。文は単独で完結する。
 
 package ast
 
 import (
 	"bytes"
 	"monkey/token"
+	"strings"
 )
 
 type Node interface {
@@ -214,6 +216,31 @@ func (bs *BlockStatement) String() string {
 	for _, s := range bs.Statements {
 		out.WriteString(s.String())
 	}
+
+	return out.String()
+}
+
+type FunctionLiteral struct {
+	Token      token.Token // 'fn'トークン
+	Parameters []*Identifier
+	Body       *BlockStatement // 定義の中身自体は文
+}
+
+func (fl *FunctionLiteral) expressionNode()      {} // fnの結果をほかの変数に代入できたりするため。代入式の一部として扱うためには、式でないといけない
+func (fl *FunctionLiteral) TokenLiteral() string { return fl.Token.Literal }
+func (fl *FunctionLiteral) String() string {
+	var out bytes.Buffer
+
+	params := []string{}
+	for _, p := range fl.Parameters {
+		params = append(params, p.String())
+	}
+
+	out.WriteString(fl.TokenLiteral())
+	out.WriteString("(")
+	out.WriteString(strings.Join(params, ", "))
+	out.WriteString(") ")
+	out.WriteString(fl.Body.String())
 
 	return out.String()
 }
