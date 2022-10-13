@@ -185,6 +185,7 @@ func (p *Parser) parseReturnStatement() *ast.ReturnStatement {
 
 	stmt.ReturnValue = p.parseExpression(LOWEST)
 
+	// 省略可能なセミコロン
 	if p.peekTokenIs(token.SEMICOLON) {
 		p.nextToken()
 	}
