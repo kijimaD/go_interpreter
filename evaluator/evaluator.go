@@ -16,11 +16,14 @@ func Eval(node ast.Node) object.Object {
 
 	// 文
 	case *ast.Program:
-		return evalStatements(node.Statements)
+		return evalProgram(node)
 	case *ast.ExpressionStatement:
 		return Eval(node.Expression)
 	case *ast.BlockStatement:
-		return evalStatements(node.Statements)
+		return evalBlockStatement(node)
+	case *ast.ReturnStatement:
+		val := Eval(node.ReturnValue)
+		return &object.ReturnValue{Value: val}
 
 	// 式
 	case *ast.IntegerLiteral:
@@ -41,12 +44,35 @@ func Eval(node ast.Node) object.Object {
 	return nil
 }
 
-// 式のスライスを評価する
-func evalStatements(stmts []ast.Statement) object.Object {
+// 式を評価する
+func evalProgram(program *ast.Program) object.Object {
 	var result object.Object
 
-	for _, statement := range stmts {
+	for _, statement := range program.Statements {
+		// return文に関連付けられた式を評価する
 		result = Eval(statement)
+
+		// Eval呼び出しの結果を新しいobject.ReturnValueにラップし、追跡できるようにする
+		// 直近の評価結果がobject.ReturnValueかどうかを確認し、もしそうならば評価を中断し、アンラップした値を返す。object.ReturnValueを返すのではなく、ラップされていた値のほうを返す
+		if returnValue, ok := result.(*object.ReturnValue); ok {
+			return returnValue.Value
+		}
+	}
+
+	return result
+}
+
+// ブロックを評価する。ブロック内ではreturnの挙動が異なるため、関数が分かれている
+func evalBlockStatement(block *ast.BlockStatement) object.Object {
+	var result object.Object
+
+	for _, statement := range block.Statements {
+		result = Eval(statement)
+
+		if result != nil && result.Type() == object.RETURN_VALUE_OBJ {
+			// 戻り値をアンラップしない。これで外側のブロック文で実行が止まり、evalProgramまで浮上していき、アンラップされる
+			return result
+		}
 	}
 
 	return result
