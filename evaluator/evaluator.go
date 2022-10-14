@@ -100,12 +100,20 @@ func evalInfixExpression(
 	switch {
 	case left.Type() == object.INTEGER_OBJ && right.Type() == object.INTEGER_OBJ:
 		return evalIntegerInfixExpression(operator, left, right)
+	case operator == "==":
+		// ポインタの比較をしている。真偽値に関してはTRUEとFALSEの2つしかないからうまくいく
+		// *object.Integerの場合は常に新しいインスタンスを生成しているので、新しいポインタが使われる。これらの異なるインスタンスのポインタを比較すると、常にfalseになる。値自体を比較したいのであって、ラップしているオブジェクト同士を比較したいわけではない
+		// そのため、整数オペランドのチェックはswitch文の上の方にあり、現在のcase分岐よりも先にマッチする
+		return nativeBoolToBooleanObject(left == right)
+	case operator == "!=":
+		return nativeBoolToBooleanObject(left != right)
 	default:
 		return NULL
 	}
 }
 
 // leftとrightが整数の場合に評価に使う関数
+// *object.Integerは毎回新しいインスタンスを生成しポインタ比較できないので、値をアンラップして比較する必要がある
 func evalIntegerInfixExpression(
 	operator string,
 	left, right object.Object,
