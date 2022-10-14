@@ -10,6 +10,7 @@ type ObjectType string
 
 const (
 	INTEGER_OBJ = "INTEGER"
+	BOOLEAN_OBJ = "BOOLEAN"
 )
 
 // Monkeyソースコードを評価する際に出てくる値全てをObjectで表現する。全ての値はObjectインターフェースを満たす構造体にラップされる
@@ -24,5 +25,11 @@ type Integer struct {
 }
 
 func (i *Integer) Type() ObjectType { return INTEGER_OBJ }
+func (i *Integer) Inspect() string  { return fmt.Sprintf("%d", i.Value) }
 
-func (i *Integer) Inspect() string { return fmt.Sprintf("%d", i.Value) }
+type Boolean struct {
+	Value bool
+}
+
+func (b *Boolean) Type() ObjectType { return BOOLEAN_OBJ }
+func (b *Boolean) Inspect() string  { return fmt.SPrintf("%d", b.Value) }
