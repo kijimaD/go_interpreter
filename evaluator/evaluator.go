@@ -175,6 +175,8 @@ func evalInfixExpression(
 	switch {
 	case left.Type() == object.INTEGER_OBJ && right.Type() == object.INTEGER_OBJ:
 		return evalIntegerInfixExpression(operator, left, right)
+	case left.Type() == object.STRING_OBJ && right.Type() == object.STRING_OBJ:
+		return evalStringInfixExpression(operator, left, right)
 	case operator == "==":
 		// ポインタの比較をしている。真偽値に関してはTRUEとFALSEの2つしかないからうまくいく
 		// *object.Integerの場合は常に新しいインスタンスを生成しているので、新しいポインタが使われる。これらの異なるインスタンスのポインタを比較すると、常にfalseになる。値自体を比較したいのであって、ラップしているオブジェクト同士を比較したいわけではない
@@ -324,4 +326,19 @@ func unwrapReturnValue(obj object.Object) object.Object {
 	}
 
 	return obj
+}
+
+func evalStringInfixExpression(
+	operator string,
+	left, right object.Object,
+) object.Object {
+	// +だけをサポート
+	if operator != "+" {
+		return newError("unknown operator: %s %s %s",
+			left.Type(), operator, right.Type())
+	}
+
+	leftVal := left.(*object.String).Value
+	rightVal := right.(*object.String).Value
+	return &object.String{Value: leftVal + rightVal}
 }
