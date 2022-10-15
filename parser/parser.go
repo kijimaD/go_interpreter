@@ -44,6 +44,7 @@ const (
 	PRODUCT     // *
 	PREFIX      // -X または !X
 	CALL        // myFunction(X, Y), 関数呼び出しでは ( は中置演算子になる
+	INDEX       // array[index]
 )
 
 // 優先順位テーブル。トークンタイプと優先順位を関連付ける
@@ -57,6 +58,7 @@ var precedences = map[token.TokenType]int{
 	token.SLASH:    PRODUCT,
 	token.ASTERISK: PRODUCT,
 	token.LPAREN:   CALL,
+	token.LBRACKET: INDEX,
 }
 
 // 字句解析器を受け取って初期化する
@@ -91,6 +93,7 @@ func New(l *lexer.Lexer) *Parser {
 	p.registerInfix(token.LT, p.parseInfixExpression)
 	p.registerInfix(token.GT, p.parseInfixExpression)
 	p.registerInfix(token.LPAREN, p.parseCallExpression)
+	p.registerInfix(token.LBRACKET, p.parseIndexExpression) // 実際には添字演算子式は両側のオペランドの間に演算子を1つ持つものというわけではない。が、そのように扱うとうまくいく。
 
 	// 2つトークンを読み込む。curTokenとpeekTokenの両方がセットされる
 	p.nextToken()
@@ -516,6 +519,20 @@ func (p *Parser) parseExpressionList(end token.TokenType) []ast.Expression {
 	}
 
 	return list
+}
+
+// 添字演算子式。myArray[1] がある場合、myArrayが左のオペランド、[が中置演算子、1が右のオペランドになる
+func (p *Parser) parseIndexExpression(left ast.Expression) ast.Expression {
+	exp := &ast.IndexExpression{Token: p.curToken, Left: left}
+
+	p.nextToken()
+	exp.Index = p.parseExpression(LOWEST)
+
+	if !p.expectPeek(token.RBRACKET) {
+		return nil
+	}
+
+	return exp
 }
 
 // デバッグしやすいようにエラーメッセージを追加する
