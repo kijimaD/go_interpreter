@@ -66,7 +66,7 @@ func New(l *lexer.Lexer) *Parser {
 		errors: []string{},
 	}
 
-	// 前置演算子
+	// 前置トークン
 	p.prefixParseFns = make(map[token.TokenType]prefixParseFn)
 	p.registerPrefix(token.IDENT, p.parseIdentifier) // もしトークンタイプtoken.IDENTが出現したら、呼び出すべき構文解析関数はparseIdentifier
 	p.registerPrefix(token.INT, p.parseIntegerLiteral)
@@ -77,8 +77,9 @@ func New(l *lexer.Lexer) *Parser {
 	p.registerPrefix(token.LPAREN, p.parseGroupedExpression)
 	p.registerPrefix(token.IF, p.parseIfExpression)
 	p.registerPrefix(token.FUNCTION, p.parseFunctionLiteral)
+	p.registerPrefix(token.STRING, p.parseStringLiteral)
 
-	// 中置演算子
+	// 中置トークン
 	p.infixParseFns = make(map[token.TokenType]infixParseFn)
 	p.registerInfix(token.PLUS, p.parseInfixExpression)
 	p.registerInfix(token.MINUS, p.parseInfixExpression)
@@ -500,6 +501,11 @@ func (p *Parser) parseCallArguments() []ast.Expression {
 	}
 
 	return args
+}
+
+// 文字列トークンをパース
+func (p *Parser) parseStringLiteral() ast.Expression {
+	return &ast.StringLiteral{Token: p.curToken, Value: p.curToken.Literal}
 }
 
 // デバッグしやすいようにエラーメッセージを追加する
