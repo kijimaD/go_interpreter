@@ -23,6 +23,7 @@ const (
 	BUILTIN_OBJ      = "BUILTIN"
 	ARRAY_OBJ        = "ARRAY"
 	HASH_OBJ         = "HASH"
+	QUOTE_OBJ        = "QUOTE"
 )
 
 // Monkeyソースコードを評価する際に出てくる値全てをObjectで表現する。全ての値はObjectインターフェースを満たす構造体にラップされる
@@ -183,4 +184,13 @@ func (h *Hash) Inspect() string {
 // 与えられたオブジェクトがハッシュキーとして利用可能かをチェックできる
 type Hashable interface {
 	HashKey() HashKey
+}
+
+type Quote struct {
+	Node ast.Node
+}
+
+func (q *Quote) Type() ObjectType { return QUOTE_OBJ }
+func (q *Quote) Inspect() string {
+	return "QUOTE(" + q.Node.String() + ")"
 }
